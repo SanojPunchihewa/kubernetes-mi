@@ -31,6 +31,10 @@ spec:
       app: {{ .Release.Name }}
   template:
     metadata:
+      {{- if .Values.wso2.deployment.mi.config }}
+      annotations:
+        checksum.mi.conf: {{ include (print $.Template.BasePath "/wso2mi-conf.yaml") . | sha256sum }}
+      {{- end }}
       labels:
         deployment: {{ template "micro-integrator.fullname" . }}
         app: {{ .Release.Name }}
@@ -84,10 +88,22 @@ spec:
               value: {{ $val | quote }}
           {{- end }}
           {{- end }}
+          {{- if .Values.wso2.deployment.mi.config }}
+          volumeMounts:
+            - name: wso2mi-conf
+              mountPath: /home/wso2carbon/wso2-config-volume/conf/deployment.toml
+              subPath: deployment.toml
+          {{- end }}
       {{- if .Values.wso2.deployment.mi.imagePullSecrets }}
       imagePullSecrets:
         - name: {{ .Values.wso2.deployment.mi.imagePullSecrets }}
       {{- else if and (not (eq .Values.wso2.subscription.username "")) (not (eq .Values.wso2.subscription.password "")) }}
       imagePullSecrets:
         - name: wso2micro-integrator-deployment-creds
+      {{ end }}
+      {{- if .Values.wso2.deployment.mi.config }}
+      volumes:
+        - name: wso2mi-conf
+          configMap:
+            name: {{ include "micro-integrator.fullname" . }}
       {{ end }}
